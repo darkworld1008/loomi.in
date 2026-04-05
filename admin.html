@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loomi - Admin Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f7f7;
+            margin: 0;
+            padding: 2rem;
+            color: #111;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+        table {
+            width: 100%;
+            background: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        th {
+            background-color: #fafafa;
+            font-weight: 500;
+            color: #555;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+        }
+        tr:last-child td {
+            border-bottom: none;
+        }
+        .order-items {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            font-size: 0.9rem;
+        }
+        .order-items li {
+            margin-bottom: 4px;
+        }
+        .amount {
+            font-weight: 600;
+        }
+        .refresh-btn {
+            background: #111;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .refresh-btn:hover {
+            background: #333;
+        }
+        .delete-btn {
+            background: #ff4d4f;
+            color: white;
+            border: none;
+            padding: 0.4rem 0.8rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .delete-btn:hover {
+            background: #e04345;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>LOOMI. Admin Dashboard</h1>
+        <button class="refresh-btn" onclick="fetchOrders()">Refresh Orders</button>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Customer</th>
+                <th>Contact / Delivery</th>
+                <th>Purchased Items</th>
+                <th>Total</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="orders-table-body">
+            <!-- Data will be loaded here -->
+            <tr>
+                <td colspan="5" style="text-align: center; color: #888;">Loading orders...</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <script>
+        async function fetchOrders() {
+            try {
+                const response = await fetch('/api/orders');
+                const data = await response.json();
+                const tbody = document.getElementById('orders-table-body');
+                tbody.innerHTML = '';
+                
+                if (data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #888;">No orders found.</td></tr>';
+                    return;
+                }
+
+                // Render in reverse chronological order (newest first)
+                data.reverse().forEach(order => {
+                    const hasItems = order.cart && order.cart.length > 0;
+                    
+                    // Build Items List
+                    let itemsHtml = '<ul class="order-items">';
+                    let total = 0;
+                    if(hasItems) {
+                        order.cart.forEach(item => {
+                            itemsHtml += `<li>${item.quantity}x ${item.name}</li>`;
+                            total += item.price * item.quantity;
+                        });
+                    } else {
+                        itemsHtml += '<li>No items tracked</li>';
+                    }
+                    itemsHtml += '</ul>';
+
+                    const row = `
+                        <tr>
+                            <td>
+                                <strong>${order.firstName || order.name || 'Unknown'} ${order.lastName || ''}</strong>
+                            </td>
+                            <td>
+                                <div>${order.email || 'N/A'}</div>
+                                <div>${order.phone || 'N/A'}</div>
+                                <div style="color: #666; font-size: 0.85rem; margin-top: 4px;">${order.address || ''} (${order.district || 'Kerala'})</div>
+                            </td>
+                            <td>${itemsHtml}</td>
+                            <td class="amount">₹${total.toLocaleString()}</td>
+                            <td>
+                                <button class="delete-btn" onclick="deleteOrder('${order._id && order._id.$oid ? order._id.$oid : order._id}')">Delete</button>
+                            </td>
+                        </tr>
+                    `;
+                    tbody.insertAdjacentHTML('beforeend', row);
+                });
+            } catch(e) {
+                console.error("Error fetching orders:", e);
+                document.getElementById('orders-table-body').innerHTML = '<tr><td colspan="4" style="text-align: center; color: red;">Failed to load orders.</td></tr>';
+            }
+        }
+
+        // Fetch initially
+        fetchOrders();
+
+        async function deleteOrder(orderId) {
+            if(!orderId) {
+                alert("Invalid order ID");
+                return;
+            }
+            if(!confirm("Are you sure you want to delete this order?")) return;
+            try {
+                const response = await fetch(`/api/orders/${orderId}`, {
+                    method: 'DELETE'
+                });
+                if(response.ok) {
+                    fetchOrders();
+                } else {
+                    alert("Failed to delete order");
+                }
+            } catch(e) {
+                console.error("Error deleting order:", e);
+                alert("Failed to delete order");
+            }
+        }
+    </script>
+</body>
+</html>
