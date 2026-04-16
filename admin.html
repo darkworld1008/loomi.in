@@ -98,7 +98,7 @@
                 <th>Customer</th>
                 <th>Contact / Delivery</th>
                 <th>Purchased Items</th>
-                <th>Total</th>
+                <th>Total & Payment</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -151,7 +151,13 @@
                                 <div style="color: #666; font-size: 0.85rem; margin-top: 4px;">${order.address || ''} (${order.district || 'Kerala'})</div>
                             </td>
                             <td>${itemsHtml}</td>
-                            <td class="amount">₹${total.toLocaleString()}</td>
+                            <td>
+                                <div class="amount">₹${total.toLocaleString()}</div>
+                                <div style="font-size: 0.85rem; color: #555; margin-top: 4px; font-weight: 500;">
+                                    ${order.paymentMethod === 'upi' ? 'Direct UPI' : 'Cash on Delivery'}
+                                </div>
+                                ${order.payment_utr ? `<div style="font-size: 0.85rem; color: #007bff; margin-top: 4px; border: 1px solid #007bff; display: inline-block; padding: 2px 4px; border-radius: 4px; font-weight: bold;">UTR: ${order.payment_utr}</div>` : ''}
+                            </td>
                             <td>
                                 <button class="delete-btn" onclick="deleteOrder('${order._id && order._id.$oid ? order._id.$oid : order._id}')">Delete</button>
                             </td>
@@ -191,3 +197,4 @@
     </script>
 </body>
 </html>
+
