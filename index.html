@@ -148,7 +148,7 @@
             </div>
         </div>
         <div class="footer-bottom">
-            <p>&copy; 2026 LOOMI. ADEEB & RISHAL All rights reserved.</p>
+            <p>&copy; 2026 LOOMI. All rights reserved.</p>
         </div>
     </footer>
 
@@ -217,8 +217,11 @@
                         </select>
                         <div id="payment-options" style="margin-bottom: 1.5rem; text-align: left;">
                             <p style="margin-bottom: 0.5rem; font-weight: 500;">Payment Method</p>
-                            <label style="display: block; margin-bottom: 0.5rem;">
-                                <input type="radio" name="payment" value="cod" checked disabled> Cash on Delivery
+                            <label style="display: block; margin-bottom: 0.5rem; cursor: pointer;">
+                                <input type="radio" name="paymentMethod" value="cod" checked> Cash on Delivery
+                            </label>
+                            <label style="display: block; margin-bottom: 0.5rem; cursor: pointer;">
+                                <input type="radio" name="paymentMethod" value="upi"> Direct UPI (Google Pay, Paytm, PhonePe)
                             </label>
                             <p style="font-size: 0.8rem; color: #666; margin-top: 5px;">We currently only deliver within
                                 Kerala.</p>
@@ -244,6 +247,21 @@
             <button id="close-confirm"
                 style="background: #111; color: #fff; border: none; padding: 0.8rem 2rem; font-size: 1rem; border-radius: 4px; cursor: pointer; margin-top: 1rem; width: 100%;">Continue
                 Shopping</button>
+        </div>
+    </div>
+
+    <!-- Product Lightbox Modal -->
+    <div class="lightbox-modal" id="lightbox-modal" onclick="closeLightbox()">
+        <button class="close-lightbox" title="Close" onclick="closeLightbox()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </button>
+        <button class="slider-btn prev-btn" onclick="changeSlide(-1, event)">&#10094;</button>
+        <button class="slider-btn next-btn" onclick="changeSlide(1, event)">&#10095;</button>
+        <div class="lightbox-content" id="lightbox-content" onclick="event.stopPropagation()">
+            <img id="lightbox-img" src="" alt="Product view">
         </div>
     </div>
 
