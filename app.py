@@ -2,9 +2,19 @@ from flask import Flask, request, jsonify, send_from_directory, Response
 from pymongo import MongoClient
 import os
 import json
+import razorpay
 from bson.json_util import dumps
 from bson.objectid import ObjectId
 app = Flask(__name__, static_folder='.')
+
+# Razorpay Initialisation
+RAZORPAY_KEY_ID = os.environ.get("RAZORPAY_KEY_ID", "rzp_test_dummykey")
+RAZORPAY_KEY_SECRET = os.environ.get("RAZORPAY_KEY_SECRET", "dummysecret")
+
+if RAZORPAY_KEY_ID != "rzp_test_dummykey":
+    razorpay_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
+else:
+    razorpay_client = None
 
 # MongoDB connection (Cloud-ready)
 MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017/")
@@ -51,6 +61,26 @@ def place_order():
     data = request.get_json()
     print("DATA RECEIVED:", data)
     
+    # Optional: Verify Razorpay signature if online payment
+    if data.get("paymentMethod") == "online" and razorpay_client:
+        payment_id = data.get("razorpay_payment_id")
+        order_id = data.get("razorpay_order_id")
+        signature = data.get("razorpay_signature")
+        try:
+            razorpay_client.utility.verify_payment_signature({
+                'razorpay_order_id': order_id,
+                'razorpay_payment_id': payment_id,
+                'razorpay_signature': signature
+            })
+            data["paymentStatus"] = "Paid"
+        except Exception as e:
+            print("Signature verification failed:", e)
+            return jsonify({"status": "error", "message": "Payment verification failed"}), 400
+    elif data.get("paymentMethod") == "online":
+        data["paymentStatus"] = "Paid (Test)"
+    else:
+        data["paymentStatus"] = "Pending (COD)"
+
     orders.insert_one(data)
     
     # Trigger email notification for production
@@ -80,6 +110,27 @@ def place_order():
         print("Failed to send email notification:", e)
 
     return jsonify({"status": "success"})
+
+@app.route("/create-razorpay-order", methods=["POST"])
+def create_razorpay_order():
+    try:
+        data = request.get_json()
+        amount = int(data.get("amount", 0)) * 100 # Razorpay expects paise
+
+        if razorpay_client:
+            order_data = {
+                "amount": amount,
+                "currency": "INR",
+                "receipt": "order_rcptid_11",
+                "payment_capture": 1
+            }
+            order = razorpay_client.order.create(data=order_data)
+            return jsonify({"status": "success", "order_id": order["id"], "key": RAZORPAY_KEY_ID})
+        else:
+            # Return dummy order ID for testing if keys are mock
+            return jsonify({"status": "success", "order_id": "order_test123", "key": RAZORPAY_KEY_ID})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route("/test")
 def test():
